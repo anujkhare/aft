@@ -1,0 +1,124 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage{amsthm,amssymb,mathrsfs,setspace}%amsmath, latexsym,footmisc
+
+% \usepackage{pstcol}
+% \usepackage{play}
+\usepackage[document]{ragged2e}
+\usepackage{epsfig}
+%\usepackage[grey,times]{quotchap}
+\usepackage[nottoc]{tocbibind}
+\usepackage{amsmath}
+%% CREATE BOOKMARKS IN THE PDF!
+\usepackage[bookmarks]{hyperref}
+%\usepackage[hidelinks]{hyperref}
+\usepackage{algorithm2e}
+
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+%
+
+\input xy
+\xyoption{all}
+
+\begin{document}
+\section{Regularized AFT models}
+
+We use the log-logistic model. The CDF is given as follows:
+\begin{equation} \label{cdf}
+F(t;\alpha, \beta) = \frac{1}{1+(t/\alpha)^{-\beta}}
+\end{equation}
+
+The probability density function is given as:
+\begin{equation} \label{pdf}
+d(t;\alpha, \beta) = \frac{((t/{\alpha})^{-\beta}}{1+(t/\alpha)^{-\beta}}
+\end{equation}
+
+Survival and hazard functions can be calulated from the above:
+\begin{equation} \label{survival}
+s(t;\alpha, \beta) = \frac{1}{1+(t/\alpha)^{\beta}}
+\end{equation}
+
+\begin{equation} \label{hazard}
+h(t;\alpha, \beta) = \frac{ (\beta/\alpha) (t/\alpha) ^ {\beta-1}}
+						  {1+(t/\alpha)^{\beta}}
+\end{equation}
+
+
+For survival analysis, given time intervals $\{t_{l_i}, t_{r_i}\}$ and covariates $x_i$ for $i=1:n$,
+we define two indicator variables $\delta_l$ and $\delta_r$ with the following
+interpretation:
+
+\begin{equation} \label{deltas}
+(\delta_l, \delta_r) = 
+		\begin{cases} (0, 0) & \mbox{: Interval censoring} \\
+					  (0, 1) & \mbox{: Left censoring} \\
+					  (1, 0) & \mbox{: Right censoring} \\
+					  (1, 1) & \mbox{: No censoring} \\
+		\end{cases}
+\end{equation}
+\vspace{8mm}
+In the observations with no censoring, the pdf is used, and in censored observations,
+the cdf is used. Hence the likelihood can be written as:
+
+\begin{equation} \label{lik0}
+L(w) = \prod_{i=1}^n [d(t_{r_i})]^{\delta_{l_i} \delta_{r_i}}
+					 [F(t_{l_i})]^{(1-\delta_{l_i}) \delta_{r_i}}
+					 [s(t_{r_i})]^{\delta_{l_i} (1-\delta_{r_i})}
+					 [s(t_{l_i}) - s(t_{r_i})]^{(1-\delta_{l_i}) (1-\delta_{r_i})}
+\end{equation}
+
+where, $\alpha_i = e^{w^Tx_i}$ %, and the link function is the identity function.
+
+Substituting from the previous equations and simplyfing, we obtain the following log-likelihood:
+
+\begin{equation} \label{lik0}
+\begin{split}
+l(w) = \sum_{i=1}^n \{{\delta_{l_i} \delta_{r_i}} \log(\beta / {t_{l_i}})
+					 - {\delta_{r_i}} \log (1+ (t_{r_i}/\alpha_i)^{\beta}) \\
+					 - {\delta_{l_i}} \log ((\alpha_i^{\beta} + t_{r_i}^{\beta}) / t_{l_i}^{\beta})
+					 + \log (\alpha_i^{\beta} + t_{r_i}^{\beta}) - \log (\alpha_i^{\beta} + t_{l_i}^{\beta})
+					 \}
+\end{split}
+\end{equation}
+
+The partial derivative of the log-likelihood wrt to $\alpha_i$ is given as:
+\begin{equation} \label{lld}
+\frac{\partial{l(w)_i}}{\partial{\alpha_i}} = \delta_{r_i} \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
+											  - \delta_{l_i} \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
+											  + \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
+											  - \frac{\beta / \alpha_i} {1 + (t_{l_i} / \alpha_i) ^ \beta}
+\end{equation}
+
+Hence, partial derivative wrt $w$ is:
+\begin{equation} \label{lld}
+\frac{\partial{l(w)}}{\partial{w_j}} = \sum_{i=1}^{n} \frac{\partial{l_i}}{\partial{w_j}}
+									 = \sum_{i=1}^{n} \frac{\partial{l_i}}{\partial{\alpha_i}} x_{ij} e^{w^Tx_i}
+\end{equation}
+
+Adding the elastic net (L1 + L2) penalty, we get the following optimization objective:
+\begin{equation} \label{objective}
+f(w) = -l(w) + (\lambda_1 \|w\|_1 + 1/2 \lambda_2 \|w\|_2^2)
+\end{equation}
+
+The subderivative of the optimization objective is given as:
+\begin{equation} \label{subderivative}
+\frac{\partial{f}}{\partial{w_j}} = \begin{cases}
+										\{-\frac{\partial{l(w)}}{\partial{w_j}} + \lambda_2 w_j -\lambda_1\} & \mbox{if }  w_j<0 \\
+										[-\frac{\partial{l(w)}}{\partial{w_j}} -\lambda_1, -\frac{\partial{l(w)}}{\partial{w_j}} +\lambda_1] & \mbox{if }  w_j=0 \\
+										\{-\frac{\partial{l(w)}}{\partial{w_j}} + \lambda_2 w_j +\lambda_1\} & \mbox{if } w_j>0 \\
+									\end{cases}
+\end{equation}
+
+Using the subderivative, upto three cases of solutions for $w_j$ may be obtained. The coordinate descent algorithm works by
+cycling through each $w_j$ in turn, keeping the others constant, and using the above estimate to calculate the optimal value
+$w^*_j$. This is repeated until convergence.
+
+\vspace{8mm}
+\textbf{Sources:}
+\begin{itemize}
+\item Machine Learning: A Probabilistic Perspective by Kevin Murphy
+\item AFT: TD Hocking
+\end{itemize}
+
+\end{document}
