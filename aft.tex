@@ -31,7 +31,7 @@ F(t;\alpha, \beta) = \frac{1}{1+(t/\alpha)^{-\beta}}
 
 The probability density function is given as:
 \begin{equation} \label{pdf}
-d(t;\alpha, \beta) = \frac{((t/{\alpha})^{-\beta}}{1+(t/\alpha)^{-\beta}}
+d(t;\alpha, \beta) = \frac{(\beta / \alpha)(t/{\alpha})^{\beta -1 }}{(1+(t/\alpha)^{-\beta})^2}
 \end{equation}
 
 Survival and hazard functions can be calulated from the above:
@@ -45,56 +45,84 @@ h(t;\alpha, \beta) = \frac{ (\beta/\alpha) (t/\alpha) ^ {\beta-1}}
 \end{equation}
 
 
-For survival analysis, given time intervals $\{t_{l_i}, t_{r_i}\}$ and covariates $x_i$ for $i=1:n$,
-we define two indicator variables $\delta_l$ and $\delta_r$ with the following
-interpretation:
+For survival analysis, given time intervals $\{\underline t_i, \overline t_i\}$ and covariates $x_i$ for $i=1:n$,
+the likelihood is given as
 
-\begin{equation} \label{deltas}
-(\delta_l, \delta_r) = 
-		\begin{cases} (0, 0) & \mbox{: Interval censoring} \\
-					  (0, 1) & \mbox{: Left censoring} \\
-					  (1, 0) & \mbox{: Right censoring} \\
-					  (1, 1) & \mbox{: No censoring} \\
+\begin{equation}
+L(w) = \prod_{i=1}^n \zeta(w, \underline t_i, \overline t_i)
+\end{equation}
+
+where,
+\begin{equation} \label{zeta}
+\zeta(w, \underline t_i, \overline t_i) = \begin{cases}
+													   d(t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i = \overline t_i<\infty \\
+													   F(\overline t_i, \alpha_i, \beta) & \mbox{if: } -\infty = \underline t_i \mbox{ , } \overline t_i<\infty \\
+													   s(\underline t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i \mbox{ , }\overline t_i=\infty \\
+													   F(\overline t_i, \alpha_i, \beta) - F(\underline t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i \ne \overline t_i<\infty \\
 		\end{cases}
 \end{equation}
-\vspace{8mm}
+
+where, $\alpha_i = e^{w^Tx_i}$. %, and the link function is the identity function.
+
 In the observations with no censoring, the pdf is used, and in censored observations,
-the cdf is used. Hence the likelihood can be written as:
+the cdf is used.
+
+%\begin{equation} \label{deltas}
+%(\delta_l, \delta_r) = 
+%		\begin{cases} (0, 0) & \mbox{: Interval censoring} \\
+%					  (0, 1) & \mbox{: Left censoring} \\
+%					  (1, 0) & \mbox{: Right censoring} \\
+%					  (1, 1) & \mbox{: No censoring} \\
+%		\end{cases}
+%\end{equation}
+
+
+%\begin{equation} \label{lik0}
+%L(w) = \prod_{i=1}^n [d(t_{r_i})]^{\delta_{l_i} \delta_{r_i}}
+%					 [F(t_{l_i})]^{(1-\delta_{l_i}) \delta_{r_i}}
+%					 [s(t_{r_i})]^{\delta_{l_i} (1-\delta_{r_i})}
+%					 [s(t_{l_i}) - s(t_{r_i})]^{(1-\delta_{l_i}) (1-\delta_{r_i})}
+%\end{equation}
+
+
+%Substituting from the previous equations and simplyfing, we obtain the following log-likelihood:
+Hence the log likelihood is given as
 
 \begin{equation} \label{lik0}
-L(w) = \prod_{i=1}^n [d(t_{r_i})]^{\delta_{l_i} \delta_{r_i}}
-					 [F(t_{l_i})]^{(1-\delta_{l_i}) \delta_{r_i}}
-					 [s(t_{r_i})]^{\delta_{l_i} (1-\delta_{r_i})}
-					 [s(t_{l_i}) - s(t_{r_i})]^{(1-\delta_{l_i}) (1-\delta_{r_i})}
+l(w) = \sum_{i=1}^n \log \zeta(w, \underline t_i, \overline t_i) = \sum_{i=1}^n \ell_i %(w, \underline t_i, \overline t_i)
+%\begin{split}
+%l(w) = \sum_{i=1}^n \{{\delta_{l_i} \delta_{r_i}} \log(\beta / {t_{l_i}})
+%					 - {\delta_{r_i}} \log (1+ (t_{r_i}/\alpha_i)^{\beta}) \\
+%					 - {\delta_{l_i}} \log ((\alpha_i^{\beta} + t_{r_i}^{\beta}) / t_{l_i}^{\beta})
+%					 + \log (\alpha_i^{\beta} + t_{r_i}^{\beta}) - \log (\alpha_i^{\beta} + t_{l_i}^{\beta})
+%					 \}
+%\end{split}
 \end{equation}
 
-where, $\alpha_i = e^{w^Tx_i}$ %, and the link function is the identity function.
+From \ref{zeta} and \ref{lik0}, the partial derivative of the log-likelihood wrt to $w_j$ is given as:
+%\begin{equation} \label{lld}
+%\frac{\partial{l(w)}}{\partial{\alpha}} = \sum_{i=1}^{n} \frac{\partial{\ell_i}}{\partial{\alpha_i}}
+%%\frac{\partial{l(w)_i}}{\partial{\alpha_i}} = \delta_{r_i} \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
+%%											  - \delta_{l_i} \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
+%%											  + \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
+%%											  - \frac{\beta / \alpha_i} {1 + (t_{l_i} / \alpha_i) ^ \beta}
+%\end{equation}
 
-Substituting from the previous equations and simplyfing, we obtain the following log-likelihood:
-
-\begin{equation} \label{lik0}
-\begin{split}
-l(w) = \sum_{i=1}^n \{{\delta_{l_i} \delta_{r_i}} \log(\beta / {t_{l_i}})
-					 - {\delta_{r_i}} \log (1+ (t_{r_i}/\alpha_i)^{\beta}) \\
-					 - {\delta_{l_i}} \log ((\alpha_i^{\beta} + t_{r_i}^{\beta}) / t_{l_i}^{\beta})
-					 + \log (\alpha_i^{\beta} + t_{r_i}^{\beta}) - \log (\alpha_i^{\beta} + t_{l_i}^{\beta})
-					 \}
-\end{split}
-\end{equation}
-
-The partial derivative of the log-likelihood wrt to $\alpha_i$ is given as:
+%Hence, partial derivative wrt $w$ is:
 \begin{equation} \label{lld}
-\frac{\partial{l(w)_i}}{\partial{\alpha_i}} = \delta_{r_i} \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
-											  - \delta_{l_i} \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
-											  + \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
-											  - \frac{\beta / \alpha_i} {1 + (t_{l_i} / \alpha_i) ^ \beta}
+\frac{\partial{l(w)}}{\partial{w_j}} = \sum_{i=1}^{n} \frac{\partial{\ell_i}}{\partial{w_j}}
+									 = \sum_{i=1}^{n} \frac{\partial{\ell_i}}{\partial{\alpha_i}} x_{ij} e^{w^Tx_i}
 \end{equation}
 
-Hence, partial derivative wrt $w$ is:
-\begin{equation} \label{lld}
-\frac{\partial{l(w)}}{\partial{w_j}} = \sum_{i=1}^{n} \frac{\partial{l_i}}{\partial{w_j}}
-									 = \sum_{i=1}^{n} \frac{\partial{l_i}}{\partial{\alpha_i}} x_{ij} e^{w^Tx_i}
-\end{equation}
+%where,
+%\begin{equation} \label{dl}
+%\frac{\partial l_i(w, \underline t_i, \overline t_i)}{\partial \alpha_i} = \begin{cases}
+%													   d(t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i = \overline t_i<\infty \\
+%													   F(\overline t_i, \alpha_i, \beta) & \mbox{if: } -\infty = \underline t_i \mbox{ , } \overline t_i<\infty \\
+%													   s(\underline t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i \mbox{ , }\overline t_i=\infty \\
+%													   F(\overline t_i, \alpha_i, \beta) - F(\underline t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i \ne \overline t_i<\infty \\
+%		\end{cases}
+%\end{equation}
 
 Adding the elastic net (L1 + L2) penalty, we get the following optimization objective:
 \begin{equation} \label{objective}
