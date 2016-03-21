@@ -23,129 +23,196 @@
 
 \begin{document}
 \section{Regularized AFT models}
+A standard AFT model is defined as follows:
 
-We use the log-logistic model. The CDF is given as follows:
+
+\begin{equation}
+	\log (Y_i) = \beta_0  + x_i^T \beta + \sigma \epsilon_i
+\end{equation}
+
+Where $x_i$ are the covariates, $Y_i$ is the observed time (output). $\epsilon_i ~ F$, where $F$ is the distribution function.
+
+Consider $F$ to be the logistic cdf, given as:
 \begin{equation} \label{cdf}
-F(t;\alpha, \beta) = \frac{1}{1+(t/\alpha)^{-\beta}}
+F(x) = \frac{1}{1 + e^{-x}}
 \end{equation}
 
 The probability density function is given as:
 \begin{equation} \label{pdf}
-d(t;\alpha, \beta) = \frac{(\beta / \alpha)(t/{\alpha})^{\beta -1 }}{(1+(t/\alpha)^{-\beta})^2}
+f(x) = \frac{e^{-x}}{(1 + e^{-x})^2}
 \end{equation}
 
-Survival and hazard functions can be calulated from the above:
+Survival function can be calulated from the above:
 \begin{equation} \label{survival}
-s(t;\alpha, \beta) = \frac{1}{1+(t/\alpha)^{\beta}}
+1 - F(x) = \frac{1}{1 + e^{x}}
 \end{equation}
 
-\begin{equation} \label{hazard}
-h(t;\alpha, \beta) = \frac{ (\beta/\alpha) (t/\alpha) ^ {\beta-1}}
-						  {1+(t/\alpha)^{\beta}}
-\end{equation}
-
-
-For survival analysis, given time intervals $\{\underline t_i, \overline t_i\}$ and covariates $x_i$ for $i=1:n$,
-the likelihood is given as
+Here on, we assume that $\sigma$ is constant for each observation $i$, and is ignored, and that the covariate matrix is appended with a column of ones.
+%Define $\eta = X'\beta$ as the vector of linear predictors.
+Hence,
 
 \begin{equation}
-L(w) = \prod_{i=1}^n \zeta(w, \underline t_i, \overline t_i)
+	\epsilon_i = \frac{\log (y_i) - (x_i^T \beta)} {\sigma}
+\end{equation}
+
+
+For interval regression with censored data, we are given time intervals $\{\underline t_i, \overline t_i\}$ and covariates $x_i$ for $i=1:n$, where $\underline t_i$ may be $-inf$
+(left censoring) and $\overline t_i$ may be $inf$ (right censoring).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LIKELIHOOD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Likelihood}
+For calculating likelihood, in the observations with no censoring, the pdf is used, and in censored observations, the cdf is used.
+The likelihood is given as:
+
+\begin{equation}
+L(\beta) = \prod_{i=1}^n \zeta(\beta, \underline t_i, \overline t_i)
 \end{equation}
 
 where,
 \begin{equation} \label{zeta}
-\zeta(w, \underline t_i, \overline t_i) = \begin{cases}
-													   d(t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i = \overline t_i<\infty \\
-													   F(\overline t_i, \alpha_i, \beta) & \mbox{if: } -\infty = \underline t_i \mbox{ , } \overline t_i<\infty \\
-													   s(\underline t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i \mbox{ , }\overline t_i=\infty \\
-													   F(\overline t_i, \alpha_i, \beta) - F(\underline t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i \ne \overline t_i<\infty \\
+\zeta_i = \zeta(\beta, \underline t_i, \overline t_i) = \begin{cases}
+													   \zeta_{i,1} = F(R_i) & \mbox{if: } -\infty \textbf{ = } \underline t_i \mbox{ , } \overline t_i<\infty \\
+													   \zeta_{i,2} = 1- F(L_i) & \mbox{if: } -\infty < \underline t_i \mbox{ , }\overline t_i\textbf{ = }\infty \\
+													   \zeta_{i,3} = F(R_i) - F(L_i) & \mbox{if: } -\infty < \underline t_i \ne \overline t_i<\infty \\
+													   \zeta_{i,4} = d(R_i) & \mbox{if: } -\infty < \underline t_i \textbf{ = } \overline t_i<\infty \\
 		\end{cases}
 \end{equation}
 
-where, $\alpha_i = e^{w^Tx_i}$. %, and the link function is the identity function.
+where, $R_i = \log (\overline t_i) - \eta_i$, and $L_i = \log (\underline t_i) - \eta_i$. $\eta_i = x_i^T \beta$ is the vector of linear predictors.
+Clearly, for left censored observations, $\underline t_i = -inf$, hence we can substitute $L_i = 0$ in $\zeta_3$ to get $\zeta_2$. 
+Simlarly, for right censored observations, $\overline t_i = inf$, hence we can substitute $R_i = inf$ in $\zeta_3$ to get $\zeta_1$. \\
 
-In the observations with no censoring, the pdf is used, and in censored observations,
-the cdf is used.
-
-%\begin{equation} \label{deltas}
-%(\delta_l, \delta_r) = 
-%		\begin{cases} (0, 0) & \mbox{: Interval censoring} \\
-%					  (0, 1) & \mbox{: Left censoring} \\
-%					  (1, 0) & \mbox{: Right censoring} \\
-%					  (1, 1) & \mbox{: No censoring} \\
-%		\end{cases}
-%\end{equation}
-
-
-%\begin{equation} \label{lik0}
-%L(w) = \prod_{i=1}^n [d(t_{r_i})]^{\delta_{l_i} \delta_{r_i}}
-%					 [F(t_{l_i})]^{(1-\delta_{l_i}) \delta_{r_i}}
-%					 [s(t_{r_i})]^{\delta_{l_i} (1-\delta_{r_i})}
-%					 [s(t_{l_i}) - s(t_{r_i})]^{(1-\delta_{l_i}) (1-\delta_{r_i})}
-%\end{equation}
-
-
-%Substituting from the previous equations and simplyfing, we obtain the following log-likelihood:
-Hence the log likelihood is given as
+\vspace{8mm}
+Hence the log likelihood is given as:
 
 \begin{equation} \label{lik0}
-l(w) = \sum_{i=1}^n \log \zeta(w, \underline t_i, \overline t_i) = \sum_{i=1}^n \ell_i %(w, \underline t_i, \overline t_i)
-%\begin{split}
-%l(w) = \sum_{i=1}^n \{{\delta_{l_i} \delta_{r_i}} \log(\beta / {t_{l_i}})
-%					 - {\delta_{r_i}} \log (1+ (t_{r_i}/\alpha_i)^{\beta}) \\
-%					 - {\delta_{l_i}} \log ((\alpha_i^{\beta} + t_{r_i}^{\beta}) / t_{l_i}^{\beta})
-%					 + \log (\alpha_i^{\beta} + t_{r_i}^{\beta}) - \log (\alpha_i^{\beta} + t_{l_i}^{\beta})
-%					 \}
-%\end{split}
+l(\beta) = \sum_{i=1}^n \log \zeta_i = \sum_{i=1}^n \gamma_i %(\beta, \underline t_i, \overline t_i)
 \end{equation}
 
-From \ref{zeta} and \ref{lik0}, the partial derivative of the log-likelihood wrt to $w_j$ is given as:
-%\begin{equation} \label{lld}
-%\frac{\partial{l(w)}}{\partial{\alpha}} = \sum_{i=1}^{n} \frac{\partial{\ell_i}}{\partial{\alpha_i}}
-%%\frac{\partial{l(w)_i}}{\partial{\alpha_i}} = \delta_{r_i} \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
-%%											  - \delta_{l_i} \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
-%%											  + \frac{\beta / \alpha_i} {1 + (t_{r_i} / \alpha_i) ^ \beta}
-%%											  - \frac{\beta / \alpha_i} {1 + (t_{l_i} / \alpha_i) ^ \beta}
-%\end{equation}
+where, $\gamma_i = \log \zeta_i$.
 
-%Hence, partial derivative wrt $w$ is:
-\begin{equation} \label{lld}
-\frac{\partial{l(w)}}{\partial{w_j}} = \sum_{i=1}^{n} \frac{\partial{\ell_i}}{\partial{w_j}}
-									 = \sum_{i=1}^{n} \frac{\partial{\ell_i}}{\partial{\alpha_i}} x_{ij} e^{w^Tx_i}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SCORE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Score}
+For now, we consider that $\underline t_i = \overline t_i$ is not possible. Hence we are left with the types of censoring. \\
+We consider the parital derivative  of $\gamma_{i,3}$ wrt to the parameters $\beta$. We can simply obtain derivatives for
+$\gamma_{i,1}$ and $\gamma_{i,2}$ by setting $L_i = 0$ and $R_i = inf$ respectively.\\
+
+We use the following:
+\begin{equation} \label{dF}
+\frac{\partial F(R_i)}{\partial \beta_j} =  -x_{ij} F(R_i)[1-F(R_i)]
 \end{equation}
 
-%where,
-%\begin{equation} \label{dl}
-%\frac{\partial l_i(w, \underline t_i, \overline t_i)}{\partial \alpha_i} = \begin{cases}
-%													   d(t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i = \overline t_i<\infty \\
-%													   F(\overline t_i, \alpha_i, \beta) & \mbox{if: } -\infty = \underline t_i \mbox{ , } \overline t_i<\infty \\
-%													   s(\underline t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i \mbox{ , }\overline t_i=\infty \\
-%													   F(\overline t_i, \alpha_i, \beta) - F(\underline t_i, \alpha_i, \beta) & \mbox{if: } -\infty < \underline t_i \ne \overline t_i<\infty \\
-%		\end{cases}
-%\end{equation}
+\begin{equation}
+\frac{\partial \gamma_{i,3}}{\partial \beta_j} = - x_{ij} \frac{ [F(R_i) (1-F(R_i)) - F(L_i)(1-F(L_i))] }{F(R_i) - F(L_i)} = x_{ij} [F(L_i) + F(R_i) - 1]
+\end{equation}
 
-Adding the elastic net (L1 + L2) penalty, we get the following optimization objective:
+Define $\mu_i = (F(L_i) + F(R_i) - 1)$, $\mu = [\mu_1, ... \mu_n]^T$. Then, partial derivative of log-likelihood is given as:
+
+\begin{equation}
+\frac{\partial l(\beta)}{\partial \beta_j} = \sum_{i=1}^n x_{ij} \mu_i
+\end{equation}
+
+Hence, the score (gradient of llikelihood) is given as:
+
+\begin{equation}
+g = \nabla_{\beta} l(\beta) = X^T \mu = \sum_{i=1}^n \mu_i \overline x_i
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% HESSIAN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Hessian}
+Hessian is the second derivative of loglikelihood:
+
+\begin{equation}
+H = \frac{ \partial {g(\beta)}^T}{\partial \beta} = \sum_{i=1}^n (\nabla_{\beta} \mu_i) \overline x_i^T
+\end{equation}
+
+Using \ref{dF}, we have:
+
+\begin{equation}
+\frac{ \partial \mu_i}{\partial \beta_j} = -x_{ij} [F(R_i) (1-F(R_i)) +  F(L_i) (1-F(L_i))]
+\end{equation}
+
+\begin{equation}
+\nabla_{\beta} \mu_i = -\overline x_i [F(R_i) (1-F(R_i)) + F(L_i) (1-F(L_i))]
+\end{equation}
+
+Hence, the hessian is given as:
+\begin{equation}
+H = \sum_{i=1}^n -w_i \overline x_i \overline x_i^T
+\end{equation}
+
+where, $w_i = [F(R_i) (1-F(R_i)) + F(L_i) (1-F(L_i))]$. Define $W=diag(w_1, ... w_n)$.
+
+\begin{equation}
+H = - X^T W X
+\end{equation}
+
+Clearly, the hessian is negative definite. Thus, the loglikelihood is strictly convex, and a unique global
+maximum exists.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ELASTIC  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{IRLS}
+We use Newton's algorithm to find MLE for the AFT model, using negative loglikelihood (NLL). The Newton update is as follows:
+\begin{equation}
+\begin{split}
+\beta & = \widetilde{\beta} - H^{-1}\widetilde{g} \\ 
+ 	  & = \widetilde{\beta} - (X^T \widetilde{W} X)^{-1} X^T \widetilde{\mu} \\
+ 	  & = (X^T \widetilde{W} X)^{-1} ((X^T \widetilde{W} X) \widetilde{\beta} -  X^T \widetilde{\mu} ) \\
+ 	  & = (X^T \widetilde{W} X)^{-1} X^T (\widetilde{W} X \widetilde{\beta} -  \widetilde{\mu} ) \\
+ 	  & = (X^T \widetilde{W} X)^{-1} X^T (\widetilde{W} X \widetilde{\beta} -  \widetilde{\mu} )
+\end{split}
+\end{equation}
+
+where, define the working response $\widetilde{z} = X \widetilde{\beta} - \widetilde{W}^{-1} \widetilde{\mu}$.
+Here, the tilde denotes that the respective values are evaluated using the parameters from the previous step.
+
+Hence, at each step we are solving a weighted least squares problem, which is a minimizer of:
+
+\begin{equation}
+\sum_{i=1}^n \widetilde{w_i} (\widetilde{z_i} - \overline x_i^T \beta)^2
+\end{equation}
+
+We can rewrite $z$ as:
+\begin{equation}
+\begin{split}
+\widetilde{ z_i} & = x_i^T \widetilde{ \beta} + \frac{ \widetilde{ \mu_i}} {\widetilde{ w_i}} \\
+				 & = x_i^T \widetilde{ \beta} +
+\end{split}
+\end{equation}
+
+This algorithm is the iteratively reweighted least squares (IRLS), since at each iteration we solve a weighted least squares problem.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ELASTIC  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Elastic net penalty and coordinate descent}
+We define the elastic net (L1 + L2) penalty as follows:
 \begin{equation} \label{objective}
-f(w) = -l(w) + (\lambda_1 \|w\|_1 + 1/2 \lambda_2 \|w\|_2^2)
+\lambda P_{\alpha}(\beta) = \lambda(\alpha \|\beta\|_1 + 1/2 (1-\alpha) \|\beta\|_2^2)
+\end{equation}
+
+Adding the elastic net (L1 + L2) penalty, we get the following penalized weighted least squares objective:
+\begin{equation} \label{objective}
+M = \sum_{i=1}^n \widetilde{w_i} (\widetilde{z_i} - \overline x_i^T \beta)^2
+	 + \lambda P_{\alpha}(\beta)
 \end{equation}
 
 The subderivative of the optimization objective is given as:
 \begin{equation} \label{subderivative}
 \frac{\partial{f}}{\partial{w_j}} = \begin{cases}
-										\{-\frac{\partial{l(w)}}{\partial{w_j}} + \lambda_2 w_j -\lambda_1\} & \mbox{if }  w_j<0 \\
-										[-\frac{\partial{l(w)}}{\partial{w_j}} -\lambda_1, -\frac{\partial{l(w)}}{\partial{w_j}} +\lambda_1] & \mbox{if }  w_j=0 \\
-										\{-\frac{\partial{l(w)}}{\partial{w_j}} + \lambda_2 w_j +\lambda_1\} & \mbox{if } w_j>0 \\
+										\{-\frac{\partial{l(\beta)}}{\partial{w_j}} + \lambda_2 w_j -\lambda_1\} & \mbox{if }  w_j<0 \\
+										[-\frac{\partial{l(\beta)}}{\partial{w_j}} -\lambda_1, -\frac{\partial{l(\beta)}}{\partial{w_j}} +\lambda_1] & \mbox{if }  w_j=0 \\
+										\{-\frac{\partial{l(\beta)}}{\partial{w_j}} + \lambda_2 w_j +\lambda_1\} & \mbox{if } w_j>0 \\
 									\end{cases}
 \end{equation}
 
 Using the subderivative, upto three cases of solutions for $w_j$ may be obtained. The coordinate descent algorithm works by
 cycling through each $w_j$ in turn, keeping the others constant, and using the above estimate to calculate the optimal value
-$w^*_j$. This is repeated until convergence.
+$\beta^*_j$. This is repeated until convergence.
 
 \vspace{8mm}
 \textbf{Sources:}
 \begin{itemize}
 \item Machine Learning: A Probabilistic Perspective by Kevin Murphy
+\item glmnet and coxnet papers
 \item AFT: TD Hocking
 \end{itemize}
 
