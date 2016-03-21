@@ -22,7 +22,9 @@
 \xyoption{all}
 
 \begin{document}
-\section{Regularized AFT models}
+\begin{center} \section*{Regularized AFT models} Anuj Khare \end{center}
+%\noindent\makebox[\linewidth]{\rule{\paperwidth}{0.4pt}}
+\vspace{8mm}
 A standard AFT model is defined as follows:
 
 
@@ -60,7 +62,7 @@ For interval regression with censored data, we are given time intervals $\{\unde
 (left censoring) and $\overline t_i$ may be $inf$ (right censoring).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LIKELIHOOD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Likelihood}
+\subsection*{Likelihood}
 For calculating likelihood, in the observations with no censoring, the pdf is used, and in censored observations, the cdf is used.
 The likelihood is given as:
 
@@ -92,7 +94,7 @@ l(\beta) = \sum_{i=1}^n \log \zeta_i = \sum_{i=1}^n \gamma_i %(\beta, \underline
 where, $\gamma_i = \log \zeta_i$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SCORE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Score}
+\subsection*{Score}
 For now, we consider that $\underline t_i = \overline t_i$ is not possible. Hence we are left with the types of censoring. \\
 We consider the parital derivative  of $\gamma_{i,3}$ wrt to the parameters $\beta$. We can simply obtain derivatives for
 $\gamma_{i,1}$ and $\gamma_{i,2}$ by setting $L_i = 0$ and $R_i = inf$ respectively.\\
@@ -119,7 +121,7 @@ g = \nabla_{\beta} l(\beta) = X^T \mu = \sum_{i=1}^n \mu_i \overline x_i
 \end{equation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% HESSIAN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Hessian}
+\subsection*{Hessian}
 Hessian is the second derivative of loglikelihood:
 
 \begin{equation}
@@ -141,8 +143,15 @@ Hence, the hessian is given as:
 H = \sum_{i=1}^n -w_i \overline x_i \overline x_i^T
 \end{equation}
 
-where, $w_i = [F(R_i) (1-F(R_i)) + F(L_i) (1-F(L_i))]$. Define $W=diag(w_1, ... w_n)$.
+where, $w_i$ is given as:
+\begin{equation} \label{w_i}
+\begin{split}
+w_i & = [F(R_i) (1-F(R_i)) + F(L_i) (1-F(L_i))] \\
+	& = - \mu_i [F(R_i) - F(L_i)]
+\end{split}
+\end{equation}
 
+Define $W=diag(w_1, ... w_n)$.
 \begin{equation}
 H = - X^T W X
 \end{equation}
@@ -151,7 +160,7 @@ Clearly, the hessian is negative definite. Thus, the loglikelihood is strictly c
 maximum exists.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ELASTIC  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{IRLS}
+\subsection*{IRLS}
 We use Newton's algorithm to find MLE for the AFT model, using negative loglikelihood (NLL). The Newton update is as follows:
 \begin{equation}
 \begin{split}
@@ -173,17 +182,17 @@ Hence, at each step we are solving a weighted least squares problem, which is a 
 \end{equation}
 
 We can rewrite $z$ as:
-\begin{equation}
+\begin{equation} \label{z_i}
 \begin{split}
 \widetilde{ z_i} & = x_i^T \widetilde{ \beta} + \frac{ \widetilde{ \mu_i}} {\widetilde{ w_i}} \\
-				 & = x_i^T \widetilde{ \beta} +
+				 & = x_i^T \widetilde{ \beta} - \frac{ 1}{F(R_i) - F(L_i)}
 \end{split}
 \end{equation}
 
 This algorithm is the iteratively reweighted least squares (IRLS), since at each iteration we solve a weighted least squares problem.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ELASTIC  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Elastic net penalty and coordinate descent}
+\subsection*{Elastic net penalty and coordinate descent}
 We define the elastic net (L1 + L2) penalty as follows:
 \begin{equation} \label{objective}
 \lambda P_{\alpha}(\beta) = \lambda(\alpha \|\beta\|_1 + 1/2 (1-\alpha) \|\beta\|_2^2)
@@ -196,24 +205,49 @@ M = \sum_{i=1}^n \widetilde{w_i} (\widetilde{z_i} - \overline x_i^T \beta)^2
 \end{equation}
 
 The subderivative of the optimization objective is given as:
-\begin{equation} \label{subderivative}
-\frac{\partial{f}}{\partial{w_j}} = \begin{cases}
-										\{-\frac{\partial{l(\beta)}}{\partial{w_j}} + \lambda_2 w_j -\lambda_1\} & \mbox{if }  w_j<0 \\
-										[-\frac{\partial{l(\beta)}}{\partial{w_j}} -\lambda_1, -\frac{\partial{l(\beta)}}{\partial{w_j}} +\lambda_1] & \mbox{if }  w_j=0 \\
-										\{-\frac{\partial{l(\beta)}}{\partial{w_j}} + \lambda_2 w_j +\lambda_1\} & \mbox{if } w_j>0 \\
-									\end{cases}
+\begin{equation}
+\frac{ \partial M}{\partial \beta_k} = \sum_{i=1}^n \widetilde{w_i} x_{ik} (\widetilde{ z_i} - \overline x_i^T \beta ) + \lambda \alpha \mbox{ sgn}(\beta_k) + \lambda (1-\alpha)\beta_k
 \end{equation}
 
-Using the subderivative, upto three cases of solutions for $w_j$ may be obtained. The coordinate descent algorithm works by
+where, sgn$(\beta_k)$ is 1 if $\beta_k > 1$, -1 if $\beta_k<0$ and 0 if $\beta_k = 0$.
+%\begin{equation} \label{subderivative}
+%\frac{\partial{f}}{\partial{w_j}} = \begin{cases}
+%										\{-\frac{\partial{l(\beta)}}{\partial{w_j}} + \lambda_2 w_j -\lambda_1\} & \mbox{if }  w_j<0 \\
+%										[-\frac{\partial{l(\beta)}}{\partial{w_j}} -\lambda_1, -\frac{\partial{l(\beta)}}{\partial{w_j}} +\lambda_1] & \mbox{if }  w_j=0 \\
+%										\{-\frac{\partial{l(\beta)}}{\partial{w_j}} + \lambda_2 w_j +\lambda_1\} & \mbox{if } w_j>0 \\
+%									\end{cases}
+%\end{equation}
+
+Using the subderivative, three cases of solutions for $\beta_k$ may be obtained. The solution is given by:
+
+\begin{equation}
+\hat \beta_k = \frac{S\left(\sum_{i=1}^n \widetilde{w_i} x_{ik} \left[\widetilde{ z_i} - \sum_{j \ne k} x_{ij} \beta_j \right], \lambda \alpha \right)}
+					{\sum_{i=1}^p \widetilde{w_i} x_{ik}^2 + \lambda (1- \alpha)}
+\end{equation}
+
+where, S is the soft thresholding operator, and $w_i$ and $z_i$ are given in \ref{w_i} and \ref{z_i} respectively.
+
+The coordinate descent algorithm works by
 cycling through each $w_j$ in turn, keeping the others constant, and using the above estimate to calculate the optimal value
 $\beta^*_j$. This is repeated until convergence.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ALGORITHM  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Algorithm}
+As explained in \cite{coxnet}, the algorithm to be followed for fitting the distribution is:
+\begin{enumerate}
+\item Initialize $\widetilde{ \beta}$.
+\item Compute $\widetilde{ w_i}$ and $\widetilde{ z_i}$.
+\item Find $\hat \beta$ by solving the penalized weighted least square problem defined in \ref{objective} using coordinate descent.
+\item Set $\widetilde{ \beta} = \hat \beta$
+\item Repeat steps 2-4 until convergence of $\hat \beta$
+\end{enumerate}
 
 \vspace{8mm}
 \textbf{Sources:}
 \begin{itemize}
-\item Machine Learning: A Probabilistic Perspective by Kevin Murphy
-\item glmnet and coxnet papers
-\item AFT: TD Hocking
+\item Machine Learning: A Probabilistic Perspective - Kevin Murphy
+\item Regularization Paths for Cox's Proportional Hazards Model via Coordinate Descent - Simon, Friedman, Hastie, Tibshirani
+\item AFT - TD Hocking
 \end{itemize}
 
 \end{document}
