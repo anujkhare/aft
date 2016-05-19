@@ -267,8 +267,7 @@ This section is borrowed from section 2.3 of \cite{a3}.
 The iregnet function will return solutions for an entire path of vaules of $\lambda$, for a fixed $\alpha$.
 We begin with $\lambda$ sufficiently large to set the solution $\beta = 0$, and decrease $\lambda$ until we arrive
 near the unregularized solution. The solutions for each value of $\lambda$ are used as the initial
-estimates of $\beta$ for the next $\lambda$ value. This is known as warm starting, and makes the algo-
-rithm efficient and stable.
+estimates of $\beta$ for the next $\lambda$ value. This is known as warm starting, and makes the algorithm efficient and stable.
 To choose initial value of $\lambda$, we use Equation \ref{beta}, and notice that for $\frac{1}{n} \sum_{i=1}^n w_i(0) x_{ij} z(0)_i < \alpha \lambda$ for all $j$, then $\beta = 0$ minimizes the objective \ref{objective}. Thus,
 
 \begin{equation} \label{lambda}
@@ -282,12 +281,12 @@ The algorithm to be followed for fitting the distribution is:
 
 \begin{algorithm}[H]
 \SetAlgoLined
- Calculate $\lambda_{max}$ using \ref{lambda} \;
+ Calculate $\lambda_{max}$ using equation \ref{lambda} \;
  \ForEach{$\lambda_j$ in $j=0, ..., m$}{
    Initialise $\widetilde{\beta}$ using solution $\hat \beta$ from previous $\lambda $\;
    \Repeat{convergence of $\hat \beta$}{
 	Compute $\widetilde{ w_i}$ and $\widetilde{ z_i}$ \;
-	Find $\hat \beta$ by solving the penalized weighted least square problem defined in \ref{objective} using coordinate descent \;
+	Find $\hat \beta$ by solving the penalized weighted least square problem defined in equation \ref{objective} using coordinate descent \;
 	Set $\widetilde{ \beta} = \hat \beta$ \;
    }
  }
@@ -317,6 +316,7 @@ Iterations are done with respect to $\log(\sigma)$ to prevent numerical underflo
 
 Derivatives for $g_2$ can be obtained by setting $z_u$ to $\inf$ in the equations for $g_4$, and similarly for $g_3$.
 
+The distribution specific values of $f(z)$, etc. are omitted.
 
 \begin{thebibliography}{1}
 \bibitem{a1} Survival - Terry M Therneau
