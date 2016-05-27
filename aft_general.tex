@@ -134,7 +134,7 @@ where $\eta_i = x_i^T \beta$ is the vector of linear predictors.
 
 \vspace{5mm}
 
-Define $\mu_i = \frac{\partial g}{\partial \eta_i}$, where g is one of $g_1$ to $g_4$ depending on type of censoring in the $i^{th}$ observation, and $\mu = [\mu_1, ... \mu_n]^T$. Then, partial derivative of log-likelihood is given as:
+Define $\mu_i = \frac{\partial g}{\partial \eta_i}$, where $g$ is one of $g_1$ to $g_4$ depending on type of censoring in the $i^{th}$ observation, and $\mu = [\mu_1, ... \mu_n]^T$. Then, partial derivative of log-likelihood is given as:
 
 \begin{equation}
 \frac{\partial l(\beta)}{\partial \beta_j} = \sum_{i=1}^n x_{ij} \mu_i
@@ -281,14 +281,16 @@ The algorithm to be followed for fitting the distribution is:
 
 \begin{algorithm}[H]
 \SetAlgoLined
- Calculate $\lambda_{max}$ using equation \ref{lambda} \;
- \ForEach{$\lambda_j$ in $j=0, ..., m$}{
-   Initialise $\widetilde{\beta}$ using solution $\hat \beta$ from previous $\lambda $\;
+ Transform output variable $y$ using $\log$ transformation \;
+ Calculate $\lambda_{max}$ using equation \ref{lambda}, and set $\widetilde{\beta} = 0$, $\widetilde{\eta}=0$ \;
+ Calculate $\lambda_{min}$ and a grid of $m$ $\lambda$ values \;
+ \ForEach{$\lambda_j$ in $j=m, ..., 0$}{
    \Repeat{convergence of $\hat \beta$}{
 	Compute $\widetilde{ w_i}$ and $\widetilde{ z_i}$ \;
 	Find $\hat \beta$ by solving the penalized weighted least square problem defined in equation \ref{objective} using coordinate descent \;
 	Set $\widetilde{ \beta} = \hat \beta$ \;
    }
+   Set $\widetilde{\beta} = \hat \beta$ , $\widetilde{\eta} = X \widetilde{\beta}$ \;
  }
  \caption{Overall optimization algorithm}
 \end{algorithm}
