@@ -1,0 +1,315 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage{amsthm,amssymb,mathrsfs,setspace}%amsmath, latexsym,footmisc
+
+% \usepackage{pstcol}
+% \usepackage{play}
+\usepackage[document]{ragged2e}
+\usepackage{epsfig}
+%\usepackage[grey,times]{quotchap}
+\usepackage[nottoc]{tocbibind}
+\usepackage{amsmath}
+%% CREATE BOOKMARKS IN THE PDF!
+\usepackage[bookmarks]{hyperref}
+%\usepackage[hidelinks]{hyperref}
+\usepackage{algorithm2e}
+
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+%
+
+\input xy
+\xyoption{all}
+
+\begin{document}
+\begin{center} \section*{Regularized AFT models} Anuj Khare \end{center}
+%\noindent\makebox[\linewidth]{\rule{\paperwidth}{0.4pt}}
+This has been adapted from the Survival package vignette.
+
+\subsection*{Model definition}
+\textbf{Inputs:} $X_{n * p}$, $T_{n * 2}$, density $f$... \\
+\textbf{Parameters:} Coefficients $\beta = [\beta_0, \beta_1 ... , \beta_p]^T$, Scale $\sigma $ \\
+
+where, $\beta_0$ is the intercept.  \\
+
+\vspace{4mm}
+The type of censoring is determined as follows:
+\begin{equation} \label{zeta}
+ \begin{cases}
+    \mbox{Left censoring} & \mbox{if: } -\infty \textbf{ = } \underline t_i \mbox{ , } \overline t_i<\infty \\
+    \mbox{Right censoring} & \mbox{if: } -\infty < \underline t_i \mbox{ , }\overline t_i\textbf{ = }\infty \\
+    \mbox{Interval censoring} &  \mbox{if: } -\infty < \underline t_i \ne \overline t_i<\infty \\
+    \mbox{No censoring} & \mbox{if: } -\infty < \underline t_i \textbf{ = } \overline t_i<\infty \\
+	\end{cases}
+\end{equation}
+
+\vspace{4mm}
+Define the transformed output,
+\begin{equation}
+	y_i = trans (T_i)
+\end{equation}
+
+where $trans$ depends on the distribution, and is $\log$ for the log-gaussian, log-logistic distributions, and so on.
+
+\vspace{4mm}
+The model is defined by the equation:
+\begin{equation}
+	y = X \beta + \sigma \epsilon
+\end{equation}
+where, $\epsilon \sim f$. Thus,
+
+\begin{equation}
+	e_i = \frac{y_i - x_i^T \beta} {\sigma} \sim f
+\end{equation}
+
+
+\vspace{4mm}
+We define the elastic net (L1 + L2) penalty as follows:
+\begin{equation} \label{elastic}
+\lambda P_{\alpha}(\beta) = \lambda(\alpha \|\beta\|_1 + 1/2 (1-\alpha) \|\beta\|_2^2)
+\end{equation}
+
+Our objective is to maximize the penalized, scaled log likelihood:
+\begin{equation} \label{objective}
+  \hat \beta = argmax_{\beta} \left( \frac{1}{n} l(\beta) - \lambda P_{\alpha}(\beta) \right)
+\end{equation}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LIKELIHOOD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Likelihood}
+For calculating likelihood, in the observations with no censoring, the pdf is used, and in censored observations, the cdf is used. Hence, the likelihood is given as:
+
+\begin{equation}
+lik = \left (\prod_{exact} f(e_i) / \sigma\right) \left (\prod_{right} 1-F(e_i)\right) \left (\prod_{left} F(e_i)\right) \left (\prod_{interval} F(e_i^u) - F(e_i^l)\right )
+\end{equation}
+
+\vspace{4mm}
+"Exact", "left", "right", and "interval" refer to uncensored, left censored, right censored and interval censored observations respectively, and $F$ is the cdf of the distribution. $e_i^u$, and $e_i^l$ are upper and lower endpoints for interval censored data.
+
+\vspace{4mm}
+Hence the log likelihood is given as:
+\begin{equation} \label{lik0}
+l(\beta) = \sum_{exact} g_1(e_i) - \log(\sigma) + \sum_{right} g_2(e_i) + \sum_{left} g_3(e_i) + \sum_{interval} g_4(e_i^l, e_i^u)
+\end{equation}
+$g_1 = \log(f)$, $g_2 = \log(1-F)$, $g_3 = \log(F)$, $g_4(e_i^l, e_i^u) = \log(F(e_i^u) - F(e_i^l))$.
+
+%\begin{equation} \label{lik0}
+%l(\beta) = \sum_{i=1}^n \log \zeta_i = \sum_{i=1}^n \gamma_i %(\beta, \underline t_i, \overline t_i)
+%\end{equation}
+%
+%where, $\gamma_i = \log \zeta_i$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SCORE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Score and Hessian}
+
+Derivatives of the LL with respect to the regression parameters are:
+
+\begin{equation}
+ \frac{\partial l(\beta)}{\partial \beta_j} = \sum_{i=1}^n \frac{\partial g}{\partial \eta_i}\frac{\partial \eta_i}{\partial \beta_j} = \sum_{i=1}^n x_{ij} \frac{\partial g}{\partial \eta_i}
+\end{equation}
+
+\begin{equation}
+ \frac{\partial^2 l(\beta)}{\partial \beta_j \beta_k} = \sum_{i=1}^n x_{ij} x_{ik} \frac{\partial^2 g}{\partial \eta_i^2}
+\end{equation}
+
+where $\eta_i = x_i^T \beta$ is the vector of linear predictors.
+
+\vspace{5mm}
+
+Define $\mu_i = \frac{\partial g}{\partial \eta_i}$, where $g$ is one of $g_1$ to $g_4$ depending on type of censoring in the $i^{th}$ observation, and $\mu = [\mu_1, ... \mu_n]^T$. Then, partial derivative of log-likelihood is given as:
+
+\begin{equation}
+\frac{\partial l(\beta)}{\partial \beta_j} = \sum_{i=1}^n x_{ij} \mu_i
+\end{equation}
+
+Hence, the score (gradient of log likelihood) is given as:
+
+\begin{equation} \label{score}
+S = \nabla_{\beta} l(\beta) = X^T \mu = \sum_{i=1}^n \mu_i \overline x_i
+\end{equation}
+
+The hessian can be written as:
+\begin{equation} \label{w_i}
+H = \sum_{i=1}^n  \overline x_i \overline x_i^T \frac{\partial^2 g}{\partial \eta_i^2}
+ = \sum_{i=1}^n  \overline x_i \overline x_i^T w_i
+\end{equation}
+
+Define $W=diag(w_1, ... w_n)$.
+\begin{equation}
+H = X^T W X
+\end{equation}
+
+%Clearly, the hessian is negative definite. Thus, the loglikelihood is strictly convex, and a unique global
+%maximum exists.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% IRLS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Taylor approximation for log-likeihood}
+
+A 2-step Taylor series centered at $\widetilde \beta$ is given as:
+
+% We use Newton's algorithm to find MLE for the AFT model. The Newton update is as follows:
+% \begin{equation}
+% \begin{split}
+% \beta & = \widetilde{\beta} + H^{-1}\widetilde{S} \\ 
+%  	  & = \widetilde{\beta} + (X^T \widetilde{W} X)^{-1} X^T \widetilde{\mu} \\
+%  	  & = (X^T \widetilde{W} X)^{-1} ((X^T \widetilde{W} X) \widetilde{\beta} +  X^T \widetilde{\mu} ) \\
+%  	  & = (X^T \widetilde{W} X)^{-1} X^T (\widetilde{W} X \widetilde{\beta} +  \widetilde{\mu} ) \\
+%  	  & = (X^T \widetilde{W} X)^{-1} X^T (\widetilde{W} X \widetilde{\beta} +  \widetilde{\mu} )
+% \end{split}
+% \end{equation}
+
+where, define the working response $\widetilde{z} = X \widetilde{\beta} + \widetilde{W}^{-1} \widetilde{\mu}$.
+Here, the tilde denotes that the respective values are evaluated using the parameters from the previous step.
+
+Hence, the log likelihood can be approximated centered at $\widetilde \beta$ as:
+\begin{equation}
+  l(\beta) = <>
+\end{equation}
+This algorithm is the iteratively reweighted least squares (IRLS), since at each iteration we solve a weighted least squares problem.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ELASTIC  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Coordinate descent}
+
+Hence, at each step we are solving a penalized weighted least squares problem, which is a minimizer of (using the scaled approximate log-likelihood):
+
+\begin{equation} \label{z_i}
+  M = \frac{1}{2n}\sum_{i=1}^n \widetilde{w_i} (\widetilde{z_i} - \overline x_i^T \beta)^2 
+    + \lambda P_{\alpha}^(\beta)
+\end{equation}
+
+The subderivative of the optimization objective is given as:
+\begin{equation}
+\frac{ \partial M}{\partial \beta_k} = \frac{1}{n}\sum_{i=1}^n \widetilde{w_i} x_{ik} (\widetilde{ z_i} - \overline x_i^T \beta ) + \lambda \alpha \mbox{ sgn}(\beta_k) + \lambda (1-\alpha)\beta_k
+\end{equation}
+
+where, sgn$(\beta_k)$ is 1 if $\beta_k > 1$, -1 if $\beta_k<0$ and 0 if $\beta_k = 0$.
+%\begin{equation} \label{subderivative}
+%\frac{\partial{f}}{\partial{w_j}} = \begin{cases}
+%										\{-\frac{\partial{l(\beta)}}{\partial{w_j}} + \lambda_2 w_j -\lambda_1\} & \mbox{if }  w_j<0 \\
+%										[-\frac{\partial{l(\beta)}}{\partial{w_j}} -\lambda_1, -\frac{\partial{l(\beta)}}{\partial{w_j}} +\lambda_1] & \mbox{if }  w_j=0 \\
+%										\{-\frac{\partial{l(\beta)}}{\partial{w_j}} + \lambda_2 w_j +\lambda_1\} & \mbox{if } w_j>0 \\
+%									\end{cases}
+%\end{equation}
+
+Using the subderivative, three cases of solutions for $\beta_k$ may be obtained. The solution is given by:
+
+\begin{equation} \label{beta}
+\hat \beta_k = \frac{S\left(\frac{1}{n} \sum_{i=1}^n \widetilde{w_i} x_{ik} \left[\widetilde{ z_i} - \sum_{j \ne k} x_{ij} \beta_j \right], \lambda \alpha \right)}
+					{\frac{1}{n} \sum_{i=1}^p \widetilde{w_i} x_{ik}^2 + \lambda (1- \alpha)}
+\end{equation}
+
+where, S is the soft thresholding operator, and $w_i$ and $z_i$ are given in \ref{w_i} and \ref{z_i} respectively.
+
+The intercept is not regularized, and hence can be calculated as:
+\begin{equation} \label{intercept}
+\hat \beta_0 = \frac{\frac{1}{n} \sum_{i=1}^n \widetilde{w_i} \left[\widetilde{ z_i} - \sum_{j \ne 0} x_{ij} \beta_j \right]}
+					{\frac{1}{n} \sum_{i=1}^p \widetilde{w_i}}
+\end{equation}
+
+
+The coordinate descent algorithm works by
+cycling through each $\beta_j$ in turn, keeping the others constant, and using the above estimate to calculate the optimal value
+$\hat \beta_j$.
+
+\vspace{4mm}
+After each update cycle for $\beta$, the scale parameter $\sigma$ is updated once using a Newton step:
+\begin{equation}
+  \sigma_{new} = \sigma_{old} - \left(\frac{\partial l^2(\sigma)}{\partial \sigma ^2} \right)^{-1}
+                                \left( \frac{\partial l (\sigma)}{\partial \sigma } \right)
+\end{equation}
+
+
+This is repeated until convergence of both $\beta$ and $\sigma$. Note that we have ignored the off-diagonal entries in the Hessian for the scale parameter.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ALGORITHM  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Pathwise solution}
+This section is borrowed from section 2.3 of \cite{a3}.
+The iregnet function will return solutions for an entire path of vaules of $\lambda$, for a fixed $\alpha$.
+We begin with $\lambda$ sufficiently large to set the solution $\beta = 0$, and decrease $\lambda$ until we arrive
+near the unregularized solution. The solutions for each value of $\lambda$ are used as the initial
+estimates of $\beta$ for the next $\lambda$ value. This is known as warm starting, and makes the algorithm efficient and stable.
+To choose initial value of $\lambda$, we use Equation \ref{beta}, and notice that for $\frac{1}{n} \sum_{i=1}^n w_i(0) x_{ij} z(0)_i < \alpha \lambda$ for all $j$, then $\beta = 0$ minimizes the objective \ref{objective}. Thus,
+
+\begin{equation} \label{lambda}
+\lambda_{max} = max_j \frac{1}{n \alpha} \sum_{i=1}^n w_i(0) x_{ij} z(0)_i
+\end{equation}
+
+We will set $\lambda_{min} = \epsilon \lambda_{max}$ , and compute solutions over a grid of $m$ values, where $\lambda_j = \lambda_{max}(\lambda_{min} / \lambda_{max})^{j/m}$ for $j = 0, .., m$.
+
+\subsection*{Algorithm}
+The algorithm to be followed for fitting the distribution is:
+
+\begin{algorithm}[H]
+\SetAlgoLined
+ Transform output variable $y$ using $\log$ transformation \;
+ Calculate $\lambda_{max}$ using equation \ref{lambda}, and set $\widetilde{\beta} = 0$, $\widetilde{\eta}=0$ \;
+ Calculate $\lambda_{min}$ and a grid of $m$ $\lambda$ values \;
+ \ForEach{$\lambda_j$ in $j=m, ..., 0$}{
+   \Repeat{convergence of $\hat \beta$}{
+	Compute $\widetilde{ w_i}$ and $\widetilde{ z_i}$ \;
+	Find $\hat \beta$ by solving the penalized weighted least square problem defined in equation \ref{objective} using coordinate descent \;
+	Set $\widetilde{ \beta} = \hat \beta$ \;
+   }
+   Set $\widetilde{\beta} = \hat \beta$ , $\widetilde{\eta} = X \widetilde{\beta}$ \;
+ }
+ \caption{Overall optimization algorithm}
+\end{algorithm}
+
+\subsection*{Scale parameter}
+So far, I have ignored the $\sigma$ parameter from the calculations and equations. This is only
+reasonable if we treat $\sigma$ as fixed. However, in other cases, $\sigma$ needs to estimated along with the parameters $\beta$, by using the derivatives as listed below.
+
+\subsection*{Derivatives}
+Iterations are done with respect to $\log(\sigma)$ to prevent numerical underflow.
+\begin{equation}
+\begin{split}
+\frac{\partial g_1}{\partial \eta} & = - \frac{1}{\sigma} \left [ \frac{f'(z)}{f(z)} \right ] \\
+\frac{\partial g_4}{\partial \eta} & = - \frac{1}{\sigma} \left [ \frac{f(z^u) - f(z^l)} {F(z^u) - F(z^l)} \right ] \\
+\frac{\partial^2 g_1}{\partial \eta^2} & = - \frac{1}{\sigma^2} \left [ \frac{f''(z)}{f(z)} \right ] - \left ({\partial g_1}/{\partial \eta} \right ) \\
+\frac{\partial^2 g_4}{\partial \eta^2} & = - \frac{1}{\sigma^2} \left [ \frac{f'(z^u) - f'(z^l)} {F(z^u) - F(z^l)} \right ] - \left ({\partial g_4}/{\partial \eta} \right )^2 \\
+\frac{\partial g_1}{\partial \log \sigma} & = - \left [ \frac{z f'(z)}{f(z)} \right ] \\
+\frac{\partial g_4}{\partial \log \sigma} & = - \left [ \frac{z^u f(z^u) - z^l f(z^l)} {F(z^u) - F(z^l)} \right ] \\
+\frac{\partial^2 g_1}{\partial (\log \sigma )^2} & = \left [ \frac{z^2 f''(z) + z f'(z)}{f(z)} \right ] - \left ({\partial g_1}/{\partial \log \sigma } \right )^2 \\
+\frac{\partial^2 g_4}{\partial (\log \sigma )^2} & = \left [ \frac{(z^u )^2 f'(z^u) - (z^l )^2 f'(z^l)} {F(z^u) - F(z^l)} \right ] - (\partial g_1 / \partial \log \sigma) (1 + \partial g_1 / \partial \log \sigma ) \\
+\frac{\partial^2 g_1}{\partial \eta \partial \log \sigma} & = \left [\frac{z f''(z)} {\sigma f(z)} \right ] - (\partial g_1 / \partial \eta) (1 + \partial g_1 / \partial \log \sigma ) \\
+\frac{\partial^2 g_4}{\partial \eta \partial \log \sigma} & = \left [\frac{z^u f'(z^u ) - z^l f'(z^l)} {\sigma [F(z^u) - F(z^l)]} \right ] - (\partial g_4 / \partial \eta) (1 + \partial g_4 / \partial \log \sigma ) \\
+\end{split}  		% END SPLIT
+\end{equation}
+
+Derivatives for $g_2$ can be obtained by setting $z_u$ to $\inf$ in the equations for $g_4$, and similarly for $g_3$.
+
+The distribution specific values of $f(z)$, etc. are omitted.
+
+\clearpage
+\subsection*{Subgradient of Cost}
+The cost to be minimized is the negative of the penalized, scaled log-likelihood:
+\begin{equation} \label{cost}
+  J(\beta) =  \left(-\frac{1}{n} l(\beta) + \lambda P_{\alpha}(\beta) \right)
+\end{equation}
+
+The subderivative of the cost is given as:
+\begin{equation}
+  \hat \beta = argmin_{\beta} \left(-\frac{1}{n} l(\beta) + \lambda P_{\alpha}(\beta) \right)
+\end{equation}
+\begin{equation} \label{subgrad_cost}
+\nabla_{\beta} J = -\frac{1}{n} S(\beta) + \lambda \alpha \mbox{sgn}(\beta) 
+                                       + \lambda (1-\alpha) \beta
+\end{equation}
+
+where, sgn$(\beta)$ is calculated element-wise on the vector. S is the score as given in \ref{score}. \\
+
+\vspace{4mm}
+The closeness of the degree 1, 2, and inf norms of the subderivate to zero can be used as a mteric for judging the optimality of the obtained solutions.
+
+\begin{thebibliography}{1}
+\bibitem{a1} Survival - Terry M Therneau
+\bibitem{a2} Machine Learning: A Probabilistic Perspective - Kevin Murphy
+\bibitem{a3} Regularization Paths for Cox's Proportional Hazards Model via Coordinate Descent - Simon, Friedman, Hastie, Tibshirani
+\bibitem{a4} AFT - TD Hocking
+\end{thebibliography}
+%\textbf{References:}
+%\begin{itemize}
+%\end{itemize}
+
+\end{document}
