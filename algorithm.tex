@@ -288,16 +288,23 @@ The cost to be minimized is the negative of the penalized, scaled log-likelihood
   J(\beta) =  \left(-\frac{1}{n} l(\beta) + \lambda P_{\alpha}(\beta) \right)
 \end{equation}
 
-The subderivative of the cost is given as:
+
 \begin{equation}
   \hat \beta = argmin_{\beta} \left(-\frac{1}{n} l(\beta) + \lambda P_{\alpha}(\beta) \right)
 \end{equation}
+
+The subderivative of the cost is given as:
 \begin{equation} \label{subgrad_cost}
 \nabla_{\beta} J = -\frac{1}{n} S(\beta) + \lambda \alpha \mbox{sgn}(\beta) 
                                        + \lambda (1-\alpha) \beta
 \end{equation}
 
 where, sgn$(\beta)$ is calculated element-wise on the vector. S is the score as given in \ref{score}. \\
+
+% \begin{equation} \label{subgrad_cost}
+% \frac{\partial J}{\partial \beta} = -\frac{1}{n} S(\beta) + \lambda \alpha \mbox{sgn}(\beta) 
+%                                        + \lambda (1-\alpha) \beta
+% \end{equation}
 
 \vspace{4mm}
 The closeness of the degree 1, 2, and inf norms of the subderivate to zero can be used as a mteric for judging the optimality of the obtained solutions.
