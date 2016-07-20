@@ -148,25 +148,25 @@ H = X^T W X
 
 A 2-step Taylor series centered at $\widetilde \beta$ is given as:
 
-% We use Newton's algorithm to find MLE for the AFT model. The Newton update is as follows:
-% \begin{equation}
-% \begin{split}
-% \beta & = \widetilde{\beta} + H^{-1}\widetilde{S} \\ 
-%  	  & = \widetilde{\beta} + (X^T \widetilde{W} X)^{-1} X^T \widetilde{\mu} \\
-%  	  & = (X^T \widetilde{W} X)^{-1} ((X^T \widetilde{W} X) \widetilde{\beta} +  X^T \widetilde{\mu} ) \\
-%  	  & = (X^T \widetilde{W} X)^{-1} X^T (\widetilde{W} X \widetilde{\beta} +  \widetilde{\mu} ) \\
-%  	  & = (X^T \widetilde{W} X)^{-1} X^T (\widetilde{W} X \widetilde{\beta} +  \widetilde{\mu} )
-% \end{split}
-% \end{equation}
+We use Newton's algorithm to find MLE for the AFT model. The Newton update is as follows:
+\begin{equation}
+\begin{split}
+\beta & = \widetilde{\beta} + H^{-1}\widetilde{S} \\ 
+ 	  & = \widetilde{\beta} + (X^T \widetilde{W} X)^{-1} X^T \widetilde{\mu} \\
+ 	  & = (X^T \widetilde{W} X)^{-1} ((X^T \widetilde{W} X) \widetilde{\beta} +  X^T \widetilde{\mu} ) \\
+ 	  & = (X^T \widetilde{W} X)^{-1} X^T (\widetilde{W} X \widetilde{\beta} +  \widetilde{\mu} ) \\
+ 	  & = (X^T \widetilde{W} X)^{-1} X^T (\widetilde{W} X \widetilde{\beta} +  \widetilde{\mu} )
+\end{split}
+\end{equation}
 
 where, define the working response $\widetilde{z} = X \widetilde{\beta} + \widetilde{W}^{-1} \widetilde{\mu}$.
 Here, the tilde denotes that the respective values are evaluated using the parameters from the previous step.
 
-Hence, the log likelihood can be approximated centered at $\widetilde \beta$ as:
-\begin{equation}
-  l(\beta) = <>
-\end{equation}
-This algorithm is the iteratively reweighted least squares (IRLS), since at each iteration we solve a weighted least squares problem.
+% Hence, the log likelihood can be approximated centered at $\widetilde \beta$ as:
+% \begin{equation}
+%   l(\beta) = <>
+% \end{equation}
+% This algorithm is the iteratively reweighted least squares (IRLS), since at each iteration we solve a weighted least squares problem.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ELASTIC  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection*{Coordinate descent}
@@ -175,12 +175,12 @@ Hence, at each step we are solving a penalized weighted least squares problem, w
 
 \begin{equation} \label{z_i}
   M = \frac{1}{2n}\sum_{i=1}^n \widetilde{w_i} (\widetilde{z_i} - \overline x_i^T \beta)^2 
-    + \lambda P_{\alpha}^(\beta)
+    + \lambda P_{\alpha}(\beta)
 \end{equation}
 
 The subderivative of the optimization objective is given as:
 \begin{equation}
-\frac{ \partial M}{\partial \beta_k} = \frac{1}{n}\sum_{i=1}^n \widetilde{w_i} x_{ik} (\widetilde{ z_i} - \overline x_i^T \beta ) + \lambda \alpha \mbox{ sgn}(\beta_k) + \lambda (1-\alpha)\beta_k
+\frac{ \partial M}{\partial \beta_k} = \frac{1}{n}\sum_{i=1}^n - \widetilde{w_i} x_{ik} (\widetilde{ z_i} - \overline x_i^T \beta ) + \lambda \alpha \mbox{ sgn}(\beta_k) + \lambda (1-\alpha)\beta_k
 \end{equation}
 
 where, sgn$(\beta_k)$ is 1 if $\beta_k > 1$, -1 if $\beta_k<0$ and 0 if $\beta_k = 0$.
@@ -195,16 +195,20 @@ where, sgn$(\beta_k)$ is 1 if $\beta_k > 1$, -1 if $\beta_k<0$ and 0 if $\beta_k
 Using the subderivative, three cases of solutions for $\beta_k$ may be obtained. The solution is given by:
 
 \begin{equation} \label{beta}
-\hat \beta_k = \frac{S\left(\frac{1}{n} \sum_{i=1}^n \widetilde{w_i} x_{ik} \left[\widetilde{ z_i} - \sum_{j \ne k} x_{ij} \beta_j \right], \lambda \alpha \right)}
-					{\frac{1}{n} \sum_{i=1}^p \widetilde{w_i} x_{ik}^2 + \lambda (1- \alpha)}
+\hat \beta_k = \frac{S\left(-\frac{1}{n} \sum_{i=1}^n \widetilde{w_i} x_{ik} \left[\widetilde{ z_i} - \sum_{j \ne k} x_{ij} \beta_j \right], \lambda \alpha \right)}
+					{-\frac{1}{n} \sum_{i=1}^p \widetilde{w_i} x_{ik}^2 + \lambda (1- \alpha)}
 \end{equation}
 
-where, S is the soft thresholding operator, and $w_i$ and $z_i$ are given in \ref{w_i} and \ref{z_i} respectively.
+where, $w_i$ and $z_i$ are given in \ref{w_i} and \ref{z_i} respectively, and S is the soft thresholding operator given as:
+
+\begin{equation} \label{soft_thresh}
+S(x, \lambda) = \mbox{sgn}(x)(|x| - \lambda)_+
+\end{equation}
 
 The intercept is not regularized, and hence can be calculated as:
 \begin{equation} \label{intercept}
-\hat \beta_0 = \frac{\frac{1}{n} \sum_{i=1}^n \widetilde{w_i} \left[\widetilde{ z_i} - \sum_{j \ne 0} x_{ij} \beta_j \right]}
-					{\frac{1}{n} \sum_{i=1}^p \widetilde{w_i}}
+\hat \beta_0 = \frac{-\frac{1}{n} \sum_{i=1}^n \widetilde{w_i} \left[\widetilde{ z_i} - \sum_{j \ne 0} x_{ij} \beta_j \right]}
+					{-\frac{1}{n} \sum_{i=1}^p \widetilde{w_i}}
 \end{equation}
 
 
